@@ -1,0 +1,2 @@
+1. Add routines to read and write files to FAT. Only reading Super block (BIOS Parameter Block) is done.
+2. Add glue to make this code work as FAT file system driver for Minix 3.
