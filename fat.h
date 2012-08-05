@@ -60,7 +60,7 @@ typedef struct fat_extbs_32
     unsigned short extended_flags;
     unsigned short fat_version;
     unsigned int root_cluster;
-    unsigned short fat_info;
+    unsigned short fat_info;    /* FS Info's sector number */
     unsigned short backup_BS_sector;
     unsigned char reserved_0[12];
     unsigned char drive_number;
@@ -71,6 +71,24 @@ typedef struct fat_extbs_32
     unsigned char fat_type_label[8];
 }__attribute__((packed)) fat_extbs_32_t;
 
+/* FAT 32's "FS Info" structure does not provide much useful information other
+ * than the free cluster count. This code will not use next free cluster hint.
+ */
+typedef struct fat32_fsinfo
+{
+    unsigned int signature;     /* 0x41615252 */
+    unsigned char reserved_1[480];
+    unsigned int signature1;    /* 0x61417272 */
+
+    /* <= volume cluster count, 0xFFFFFFFF if unknown, it must be computed */
+    unsigned int free_cluster_count;
+
+    /* Location of next free cluster hint for FAT driver. */
+    unsigned int next_free_cluster;
+    unsigned char reserved_2[12];
+    unsigned int signature2;    /* 0xAA550000 */
+} fat32_fsinfo_t;
+
 typedef struct fat_device
 {
 	fat_bs_t boot_sect;
@@ -80,7 +98,9 @@ typedef struct fat_device
 	unsigned int first_data_sector;
 	unsigned int first_sector_of_cluster;
     unsigned int total_sec;
-    unsigned int cluster_count; // Num of data cluster starting at cluster 2.
+    unsigned int cluster_count; /* Num of data cluster starting at cluster 2. */
+    unsigned int free_cluster_count;
+    unsigned int next_free_cluster;
 } fat_device_t;
 
 fat_device_t *fat_device_init(fat_bs_t *boot_sector);
@@ -92,6 +112,8 @@ int get_total_sectors(fat_device_t *device);
 int get_root_dir_sectors(fat_device_t* device);
 int get_fat_size(fat_device_t* device);
 int get_fat_type(fat_device_t* device);
+
+int get_fat32_fsinfo(fat32_fsinfo_t *fsinfo, fat_device_t *device);
 
 unsigned int get_first_sector_of_cluster(fat_device_t *device, unsigned int cluster);
 unsigned int get_fat_offset(fat_device_t *device, unsigned int cluster);

@@ -13,7 +13,11 @@
 int get_fat_type(fat_device_t *device)
 {
 	int fat_type = 0;
-	unsigned int cluster_count = device->cluster_count;
+    unsigned int cluster_count = 0;
+
+    if((cluster_count = device->cluster_count) == 0) {
+        get_cluster_count(device);
+    }
 	
 	if(cluster_count < FAT12_CLUSTER_COUNT) {
 		fat_type = FAT12;
@@ -102,6 +106,10 @@ int get_cluster_count(fat_device_t *device)
 {
 	unsigned int dataregion_sec_count = 0, cluster_count = 0;
 	
+    if(device->total_sec == 0) {
+        get_total_sectors(device);
+    }
+
 	dataregion_sec_count = device->total_sec - (device->boot_sect.reserved_sector_count + 
 	(device->boot_sect.table_count * device->fat_size) + device->root_dir_sectors);
 	
@@ -130,12 +138,37 @@ unsigned int get_fat_offset(fat_device_t *device, unsigned int cluster)
 	return(fat_offset);
 }
 
+int get_fat32_fsinfo(fat32_fsinfo_t *fsinfo, fat_device_t *device)
+{
+    int ret = -1;
+
+    if(device->fat_type == FAT32) {
+
+        if(fsinfo->signature == 0x41615252 && fsinfo->signature1 == 0x61417272 &&
+           fsinfo->signature2 == 0xAA550000) {
+            device->free_cluster_count = fsinfo->free_cluster_count;
+            device->next_free_cluster = fsinfo->next_free_cluster;
+            ret = 0;
+        } else {
+            /* Invalid FS Info structure */
+
+            /* Free cluster count is unknown and must be computed. */
+            device->free_cluster_count = 0xFFFFFFFF;
+
+            /* Next free cluster hint is unavailable need to compute. */
+            device->next_free_cluster = 0xFFFFFFFF;
+        }
+    }
+
+    return(ret);
+}
 
 fat_device_t* fat_device_init(fat_bs_t* boot_sector)
 {
 	fat_device_t *device = NULL;
 	
 	device = calloc(1, sizeof(fat_device_t));
+    memset(device, 0, sizeof(fat_device_t));
 	
 	if(device != NULL) {
 		memcpy(&device->boot_sect, boot_sector, sizeof(fat_bs_t));
@@ -146,6 +179,8 @@ fat_device_t* fat_device_init(fat_bs_t* boot_sector)
 		get_cluster_count(device);
 		get_fat_type(device);
 		get_first_data_sector(device);
+
+        // get_fat32_fsinfo(device);
 		
 		return(device);
 	}
