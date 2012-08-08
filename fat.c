@@ -84,8 +84,11 @@ int get_first_data_sector(fat_device_t *device)
 	fat_bs_t *fatbs = &device->boot_sect;
 	unsigned int first_data_sector = 0;
 	
-	first_data_sector = fatbs->reserved_sector_count +
-		device->root_dir_sectors + fatbs->table_count * device->fat_size;
+    // first_data_sector = fatbs->reserved_sector_count +
+        // device->root_dir_sectors + fatbs->table_count * device->fat_size;
+    /* Based on code from fat-util. TODO: Need to verify */
+    first_data_sector = fatbs->table_count * device->fat_size +
+            fatbs->reserved_sector_count;
 	
 	device->first_data_sector = first_data_sector;
 	

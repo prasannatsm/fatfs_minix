@@ -12,6 +12,7 @@
 #include "dev.h"
 
 FILE *fd = NULL;
+#define NUM_SECTORS 1
 
 int main(void)
 {
@@ -24,8 +25,8 @@ int main(void)
 	memset(&boot_sector, 0, sizeof(boot_sector));
 	memset(buf, 0, sizeof(buf));
 
-    fd = fopen("/home/prasanna/Projects/OpenSource/Fat_FileSystem/fatfs_minix/fat32.img", "r+b");
-    // fd = fopen("/home/prasanna/Projects/OpenSource/Fat_FileSystem/fatfs_minix/fat16.img", "r+b");
+    // fd = fopen("/home/prasanna/Projects/OpenSource/Fat_FileSystem/fatfs_minix/fat32.img", "r+b");
+    fd = fopen("/home/prasanna/Projects/OpenSource/Fat_FileSystem/fatfs_minix/fat16.img", "r+b");
 	if(fd == NULL) {
 		return (-1);
 	}
@@ -54,6 +55,9 @@ int main(void)
     printf("Bytes per sector = %d\n", boot_sector.bytes_per_sector);
     printf("Sectors per cluster = %d\n", boot_sector.sectors_per_cluster);
     printf("Sectors per track = %d\n", boot_sector.sectors_per_track);
+    printf("Number of FATs = %d\n", boot_sector.table_count);
+    printf("Sector per FAT aka Table Size 16 = %d\n", boot_sector.table_size_16);
+    printf("Reserved Sectors = %d\n", boot_sector.reserved_sector_count);
 
     print_fat_info(dev);
 
@@ -72,7 +76,33 @@ int main(void)
         printf("FAT32 Next free cluster = %d\n", dev->next_free_cluster);
     }
 
+    unsigned int i = 0, j = 0, k = 0;
+    unsigned int size = NUM_SECTORS * boot_sector.bytes_per_sector;
+    unsigned char *buf1 = (unsigned char *) calloc(size, sizeof(unsigned char));
+
+    // 327f7th byte. 3807c
+    fseek(fd, dev->first_data_sector * boot_sector.bytes_per_sector, SEEK_SET);
+    fread(buf1, 1, size, fd);
+
+    for(i = 0; i < NUM_SECTORS; ++i)
+    {
+        printf("Sector %d:\n", i);
+
+        for(j = 0; j < 64; ++j)
+        {
+            for(k = 0; k < 8; ++k)
+            {
+                printf(" 0x%02x", buf1[i * 512 + j * 8 + k]);
+            }
+
+            printf("\n");
+        }
+
+        printf("\n\n");
+    }
+
     fclose(fd);
+    free(buf1); buf1 = NULL;
 	
 	return(0);
 }

@@ -28,7 +28,7 @@ typedef struct fat_bs
     unsigned short root_entry_count;
     unsigned short total_sectors_16;
     unsigned char media_type;
-    unsigned short table_size_16;
+    unsigned short table_size_16; // Sector per FAT as per fat-util code.
     unsigned short sectors_per_track;
     unsigned short head_side_count;
     unsigned int hidden_sector_count;
@@ -114,6 +114,8 @@ int get_fat_size(fat_device_t* device);
 int get_fat_type(fat_device_t* device);
 
 int get_fat32_fsinfo(fat32_fsinfo_t *fsinfo, fat_device_t *device);
+
+// int get_first_root_sector(fat_device_t *device);
 
 unsigned int get_first_sector_of_cluster(fat_device_t *device, unsigned int cluster);
 unsigned int get_fat_offset(fat_device_t *device, unsigned int cluster);
